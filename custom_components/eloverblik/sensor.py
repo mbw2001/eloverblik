@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List
 
 from homeassistant.components.sensor import SensorEntity
@@ -13,8 +13,8 @@ from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
 )
 from homeassistant.util import dt as dt_util
-
 from homeassistant.const import UnitOfEnergy
+from homeassistant.exceptions import ConfigEntryNotReady
 
 from aioeloverblik import EloverblikClient
 
@@ -85,11 +85,15 @@ class EloverblikCoordinator(DataUpdateCoordinator):
 
         client = await self.hass.async_add_executor_job(_create_client)
 
-        async with client:
-            ts = await client.get_time_series(
-                [self.mpid],
-                aggregation="Quarter",
-            )
+        today = date.today()
+        from_date = today - timedelta(days=3)  # eller 1 hvis du vil
+
+        ts = await client.get_time_series(
+            [self.mpid],
+            from_date,
+            today,
+            aggregation="Quarter",
+        )
 
         eloverblik = _filter_today(_flatten_points(ts))
         saveeye = _get_saveeye_points(
