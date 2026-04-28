@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Eloverblik login",
+        "data": {
+          "api_token": "API token"
+        }
+      },
+      "select_mpid": {
+        "title": "Vælg målepunkt",
+        "data": {
+          "metering_point": "Målepunkt",
+          "saveeye_energy": "SaveEye energisensor",
+          "saveeye_power": "SaveEye effekt sensor"
+        }
+      }
+    },
+    "error": {
+      "auth": "Kunne ikke validere token"
+    }
+  }
+}

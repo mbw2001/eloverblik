@@ -1,0 +1,10 @@
+{
+  "domain": "eloverblik",
+  "name": "Eloverblik Hybrid",
+  "version": "1.0.0",
+  "documentation": "https://github.com/mbw2001/eloverblik",
+  "requirements": ["aioeloverblik>=0.1.2"],
+  "codeowners": ["mbw2001"],
+  "config_flow": true,
+  "iot_class": "cloud_polling"
+}

@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Eloverblik login",
+        "description": "Enter your refresh token to access your metering points",
+        "data": {
+          "api_token": "Refresh token"
+        }
+      },
+      "select_mpid": {
+        "title": "Select metering point",
+        "description": "Choose your metering point and optional SaveEye sensors",
+        "data": {
+          "metering_point": "Metering point",
+          "saveeye_energy": "SaveEye energy sensor (Wh)",
+          "saveeye_power": "SaveEye power sensor (W)"
+        }
+      }
+    },
+    "error": {
+      "auth": "Failed to authenticate with the provided token"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Eloverblik settings",
+        "description": "Update optional SaveEye sensors",
+        "data": {
+          "saveeye_energy": "SaveEye energy sensor (Wh)",
+          "saveeye_power": "SaveEye power sensor (W)"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Eloverblik Hybrid",
+  "description": "Home Assistant Custom Component merging a live sensor and Eloverblik historical data.",
+  "domain": "eloverblik",
+  "iot_class": "cloud_polling"
+}
