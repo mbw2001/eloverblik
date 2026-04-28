@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timedelta
+from datetime import datetime, date, timedelta
 from typing import Any, Dict, List
 
 from homeassistant.components.sensor import SensorEntity
@@ -80,20 +80,22 @@ class EloverblikCoordinator(DataUpdateCoordinator):
         self.saveeye_power = saveeye_power
 
     async def _async_update_data(self):
-        def _create_client():
-            return EloverblikClient(refresh_token=self.token)
-
-        client = await self.hass.async_add_executor_job(_create_client)
 
         today = date.today()
-        from_date = today - timedelta(days=3)  # eller 1 hvis du vil
+        from_date = today - timedelta(days=2)
 
-        ts = await client.get_time_series(
-            [self.mpid],
-            from_date,
-            today,
-            aggregation="Quarter",
-        )
+        try:
+            async with EloverblikClient(refresh_token=self.token) as client:
+                ts = await client.get_time_series(
+                    [self.mpid],
+                    from_date,
+                    today,
+                    aggregation="Quarter",
+                )
+
+        except Exception as err:
+            _LOGGER.error("API error: %s", err)
+            raise ConfigEntryNotReady from err
 
         eloverblik = _filter_today(_flatten_points(ts))
         saveeye = _get_saveeye_points(
@@ -137,13 +139,13 @@ def _merge(api: List[dict], saveeye: List[dict]) -> List[dict]:
         result[p["time"]] = p
 
     for p in api:
-        result[p["time"]] = p
+        result[p["time"]] = p  # API overwrites
 
     return list(result.values())
 
 
 # =========================
-# SAVEEYE (simplified)
+# SAVEEYE (simple fallback)
 # =========================
 def _get_saveeye_points(hass, energy_entity, power_entity):
     points = []
@@ -153,7 +155,7 @@ def _get_saveeye_points(hass, energy_entity, power_entity):
         state: State = hass.states.get(energy_entity)
         if state and state.state not in ("unknown", "unavailable"):
             try:
-                val = float(state.state) / 1000
+                val = float(state.state) / 1000  # Wh → kWh
                 points.append({"time": now, "value": val})
             except Exception:
                 pass
@@ -172,7 +174,7 @@ def _get_saveeye_points(hass, energy_entity, power_entity):
 
 
 # =========================
-# FLATTEN
+# FLATTEN (FIXED)
 # =========================
 def _flatten_points(data: Any) -> List[dict]:
     points = []
@@ -180,19 +182,33 @@ def _flatten_points(data: Any) -> List[dict]:
     for doc in data:
         for ts in doc.time_series:
             for period in ts.periods:
-                start = datetime.fromisoformat(period.start.replace("Z", "+00:00"))
+
+                # 🔥 FIX: new structure
+                try:
+                    start_str = period.time_interval.start
+                except AttributeError:
+                    _LOGGER.warning("Unknown period structure: %s", period)
+                    continue
+
+                start = datetime.fromisoformat(
+                    start_str.replace("Z", "+00:00")
+                )
+
                 step = timedelta(minutes=15)
 
                 for p in period.points:
-                    ts = start + step * (int(p.position) - 1)
-                    ts = dt_util.as_local(ts)
+                    try:
+                        ts_point = start + step * (int(p.position) - 1)
+                        ts_point = dt_util.as_local(ts_point)
 
-                    points.append(
-                        {
-                            "time": ts,
-                            "value": float(p.quantity),
-                        }
-                    )
+                        points.append(
+                            {
+                                "time": ts_point,
+                                "value": float(p.quantity),
+                            }
+                        )
+                    except Exception:
+                        continue
 
     return points
 
